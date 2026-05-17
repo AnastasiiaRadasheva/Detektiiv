@@ -41,9 +41,9 @@ public class Game
             HasLeftRoom = false, HasRightRoom = true,
             Objects = new()
             {
-                new RoomObject { Item = Item.Apple, X = 0.13, Y = 0.55, Width = 85,  Height = 85  },
-                new RoomObject { Item = Item.Stick, X = 0.40, Y = 0.50, Width = 110, Height = 85  },
-                new RoomObject { Item = Item.Chest, X = 0.68, Y = 0.35, Width = 160, Height = 145, IsInteractable = true },
+                new RoomObject { Item = Item.Apple, X = 0.13, Y = 0.52, Width = 110, Height = 110 },
+                new RoomObject { Item = Item.Stick, X = 0.40, Y = 0.47, Width = 140, Height = 110 },
+                new RoomObject { Item = Item.Chest, X = 0.68, Y = 0.48, Width = 160, Height = 145, IsInteractable = true },
             }
         },
         new Room
@@ -52,8 +52,8 @@ public class Game
             HasLeftRoom = true, HasRightRoom = true,
             Objects = new()
             {
-                new RoomObject { Item = Item.Vase,  X = 0.20, Y = 0.42, Width = 90,  Height = 115, IsInteractable = true },
-                new RoomObject { Item = Item.Stone, X = 0.72, Y = 0.58, Width = 95,  Height = 75  },
+                new RoomObject { Item = Item.Vase,  X = 0.20, Y = 0.38, Width = 115, Height = 145, IsInteractable = true },
+                new RoomObject { Item = Item.Stone, X = 0.72, Y = 0.55, Width = 120, Height = 95  },
             }
         },
         new Room
@@ -62,7 +62,7 @@ public class Game
             HasLeftRoom = true, HasRightRoom = false,
             Objects = new()
             {
-                new RoomObject { Item = Item.Raven, X = 0.42, Y = 0.25, Width = 115, Height = 145, IsInteractable = true },
+                new RoomObject { Item = Item.Raven, X = 0.42, Y = 0.20, Width = 145, Height = 185, IsInteractable = true },
             }
         },
     };
@@ -100,20 +100,20 @@ public class Game
         obj.Item.IsCollected = true;
         obj.IsVisible = false;
         Player.AddScore(10);
-        return Ok($"✅ {obj.Item.Name} lisati inventarile!");
+        return Ok($"{obj.Item.Name} lisati inventarile.");
     }
 
     private InteractionResult InteractChest(RoomObject obj)
     {
         if (ChestOpened) return Fail("Seif on juba avatud.");
         if (!Player.HasItem("key"))
-            return Fail("🔒 Seif on lukus. Sul pole võtit.");
+            return Fail("Seif on lukus. Sul pole võtit.");
 
         ChestOpened = true;
         obj.Item = Item.ChestOpen;
         obj.IsInteractable = false;
         Player.AddScore(50);
-        return new InteractionResult { Success = true, Message = "🎉 Seif on avatud! Leidsid aarde!", UpdateRoom = true, IsGameEnd = true };
+        return new InteractionResult { Success = true, Message = "Seif on avatud! Leidsid aarde!", UpdateRoom = true, IsGameEnd = true };
     }
 
     private InteractionResult InteractVase(RoomObject obj)
@@ -143,7 +143,7 @@ public class Game
 
         Player.AddToInventory(Item.Key);
         Player.AddScore(30);
-        return Ok("💥 Kuvšin purunes! Leidsid võtme! 🗝️", updateRoom: true);
+        return Ok("Kuvšin purunes! Leidsid võtme!", updateRoom: true);
     }
 
     private InteractionResult InteractRaven(RoomObject obj)
@@ -162,7 +162,7 @@ public class Game
 
         Player.AddToInventory(Item.Rope);
         Player.AddScore(30);
-        return Ok("🐦 Ronk võttis õuna ja andis sulle nööri! 🪢", updateRoom: true);
+        return Ok("Ronk võttis õuna ja andis sulle nööri!", updateRoom: true);
     }
 
     // ── Craft ──────────────────────────────────────────────────────

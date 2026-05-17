@@ -8,11 +8,12 @@ public class GamePage : ContentPage
     private Label _roomNameLabel = null!;
     private Label _timerLabel = null!;
     private Button _settingsBtn = null!;
+    private Button _homeBtn = null!;
+    private Button _hintBtn = null!;
     private Grid _topBar = null!;
     private Grid _invBar = null!;
     private Label _invTitle = null!;
     private Button _craftBtn = null!;
-    private Image _roomBg = null!;
     private AbsoluteLayout _objectsLayout = null!;
     private Button _leftBtn = null!, _rightBtn = null!;
     private Ellipse _dot0 = null!, _dot1 = null!, _dot2 = null!;
@@ -29,7 +30,7 @@ public class GamePage : ContentPage
 
     public GamePage(string playerName, Theme? theme = null)
     {
-        Shell.SetNavBarIsVisible(this, false);
+        NavigationPage.SetHasNavigationBar(this, false);
         _game = new Game(playerName);
         _game.Player.InventoryChanged += () => MainThread.BeginInvokeOnMainThread(RefreshInventory);
         BuildUI();
@@ -47,7 +48,7 @@ public class GamePage : ContentPage
             MainThread.BeginInvokeOnMainThread(() =>
             {
                 var el = DateTime.Now - _startTime;
-                _timerLabel.Text = $"⏱ {(int)el.TotalMinutes:00}:{el.Seconds:00}";
+                _timerLabel.Text = $"{(int)el.TotalMinutes:00}:{el.Seconds:00}";
             });
         _gameTimer.Start();
     }
@@ -66,39 +67,39 @@ public class GamePage : ContentPage
 
     private void BuildUI()
     {
-        // TOP BAR
+        // TOP BAR: [← Home] [RoomName...] [Timer] [? Hint] [... Settings]
+        _homeBtn = new Button { Text = "←", FontSize = 16, BackgroundColor = Colors.Transparent, Padding = new Thickness(4) };
+        _homeBtn.Clicked += async (s, e) =>
+        {
+            _gameTimer?.Stop();
+            await Navigation.PopAsync();
+        };
+
         _roomNameLabel = new Label { FontSize = 17, FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center };
-        _timerLabel = new Label { Text = "⏱ 00:00", FontSize = 13, Margin = new Thickness(8, 0), VerticalOptions = LayoutOptions.Center };
-        _settingsBtn = new Button { Text = "⚙", FontSize = 20, BackgroundColor = Colors.Transparent, Padding = new Thickness(4) };
+        _timerLabel = new Label { Text = "00:00", FontSize = 13, Margin = new Thickness(8, 0), VerticalOptions = LayoutOptions.Center, HorizontalOptions = LayoutOptions.Center };
+
+        _hintBtn = new Button { Text = "?", FontSize = 16, BackgroundColor = Colors.Transparent, Padding = new Thickness(4) };
+        _hintBtn.Clicked += async (s, e) => await ShowMsg(GetNextHint(), true);
+
+        _settingsBtn = new Button { Text = "...", FontSize = 16, BackgroundColor = Colors.Transparent, Padding = new Thickness(4) };
         _settingsBtn.Clicked += OnSettingsClicked;
 
-        _topBar = new Grid { Padding = new Thickness(14, 10) };
+        _topBar = new Grid { Padding = new Thickness(8, 10) };
+        _topBar.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
         _topBar.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
         _topBar.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
         _topBar.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
-        _topBar.Add(_roomNameLabel, 0, 0);
-        _topBar.Add(_timerLabel, 1, 0);
-        _topBar.Add(_settingsBtn, 2, 0);
+        _topBar.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+        _topBar.Add(_homeBtn, 0, 0);
+        _topBar.Add(_roomNameLabel, 1, 0);
+        _topBar.Add(_timerLabel, 2, 0);
+        _topBar.Add(_hintBtn, 3, 0);
+        _topBar.Add(_settingsBtn, 4, 0);
 
-        // ROOM — Grid with explicit Star row/column so every layer reliably fills the cell
-        _roomBg = new Image
-        {
-            Aspect = Aspect.Fill,
-            InputTransparent = true,
-            HorizontalOptions = LayoutOptions.Fill,
-            VerticalOptions = LayoutOptions.Fill
-        };
+        // ROOM
         _objectsLayout = new AbsoluteLayout
         {
             InputTransparent = false,
-            HorizontalOptions = LayoutOptions.Fill,
-            VerticalOptions = LayoutOptions.Fill
-        };
-
-        var overlay = new BoxView
-        {
-            Color = Color.FromArgb("#44000000"),
-            InputTransparent = true,
             HorizontalOptions = LayoutOptions.Fill,
             VerticalOptions = LayoutOptions.Fill
         };
@@ -136,21 +137,18 @@ public class GamePage : ContentPage
             Children = { _dot0, _dot1, _dot2 }
         };
 
-        // Grid with one explicit Star×Star cell — all layers stack in (0,0), each fills
         _roomGrid = new Grid { BackgroundColor = Colors.Transparent };
         _roomGrid.RowDefinitions.Add(new RowDefinition(GridLength.Star));
         _roomGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-        _roomGrid.Add(_roomBg,         0, 0);
-        _roomGrid.Add(overlay,         0, 0);
-        _roomGrid.Add(_objectsLayout,  0, 0);
-        _roomGrid.Add(navGrid,         0, 0);
-        _roomGrid.Add(dots,            0, 0);
+        _roomGrid.Add(_objectsLayout, 0, 0);
+        _roomGrid.Add(navGrid,        0, 0);
+        _roomGrid.Add(dots,           0, 0);
 
         // INVENTORY BAR
-        _invTitle = new Label { Text = "🎒 Inventar", FontSize = 13, FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center };
+        _invTitle = new Label { Text = "Inventar", FontSize = 13, FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center };
         _craftBtn = new Button
         {
-            Text = "⚗️ Craft",
+            Text = "Craft",
             TextColor = Colors.Black,
             FontSize = 13,
             FontAttributes = FontAttributes.Bold,
@@ -175,7 +173,7 @@ public class GamePage : ContentPage
         _invBar.Add(invTopRow, 0, 0);
         _invBar.Add(invScroll, 0, 1);
 
-        // MESSAGE BAR
+        // MESSAGE — overlay at bottom of room
         _msgLabel = new Label { FontSize = 14, HorizontalTextAlignment = TextAlignment.Center, MaxLines = 2 };
         _msgBorder = new Border
         {
@@ -183,19 +181,22 @@ public class GamePage : ContentPage
             Content = _msgLabel,
             IsVisible = false,
             StrokeThickness = 1,
-            StrokeShape = new Rectangle()
+            StrokeShape = new Rectangle(),
+            VerticalOptions = LayoutOptions.End,
+            HorizontalOptions = LayoutOptions.Fill,
+            Margin = new Thickness(8, 0, 8, 10),
+            InputTransparent = true
         };
+        _roomGrid.Add(_msgBorder, 0, 0);
 
         // ROOT
         var root = new Grid();
         root.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
         root.RowDefinitions.Add(new RowDefinition(GridLength.Star));
         root.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-        root.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
         root.Add(_topBar, 0, 0);
         root.Add(_roomGrid, 0, 1);
         root.Add(_invBar, 0, 2);
-        root.Add(_msgBorder, 0, 3);
         Content = root;
     }
 
@@ -225,6 +226,8 @@ public class GamePage : ContentPage
         _topBar.BackgroundColor = t.CardColor;
         _roomNameLabel.TextColor = t.AccentColor;
         _timerLabel.TextColor = t.TextColor;
+        _homeBtn.TextColor = t.AccentColor;
+        _hintBtn.TextColor = t.AccentColor;
         _settingsBtn.TextColor = t.AccentColor;
         _invBar.BackgroundColor = t.InventoryColor;
         _invTitle.TextColor = t.AccentColor;
@@ -240,7 +243,6 @@ public class GamePage : ContentPage
     {
         var room = _game.CurrentRoom;
         _roomNameLabel.Text = room.Name;
-        _roomBg.Source = room.BackgroundImage;
         _leftBtn.IsVisible = room.HasLeftRoom;
         _rightBtn.IsVisible = room.HasRightRoom;
         UpdateDots();
@@ -250,6 +252,12 @@ public class GamePage : ContentPage
     private void RenderObjects()
     {
         _objectsLayout.Children.Clear();
+
+        var bg = new Image { Source = _game.CurrentRoom.BackgroundImage, Aspect = Aspect.AspectFill, InputTransparent = true };
+        AbsoluteLayout.SetLayoutBounds(bg, new Rect(0, 0, 1, 1));
+        AbsoluteLayout.SetLayoutFlags(bg, Microsoft.Maui.Layouts.AbsoluteLayoutFlags.All);
+        _objectsLayout.Add(bg);
+
         foreach (var obj in _game.CurrentRoom.Objects.Where(o => o.IsVisible))
             _objectsLayout.Add(CreateObjectView(obj));
     }
@@ -282,11 +290,7 @@ public class GamePage : ContentPage
             }
         };
 
-        var col = new VerticalStackLayout
-        {
-            Spacing = 2,
-            Children = { img, namePill }
-        };
+        var col = new VerticalStackLayout { Spacing = 2, Children = { img, namePill } };
 
         var tap = new TapGestureRecognizer();
         tap.Tapped += async (s, e) =>
@@ -297,10 +301,8 @@ public class GamePage : ContentPage
         };
         col.GestureRecognizers.Add(tap);
 
-        AbsoluteLayout.SetLayoutBounds(col,
-            new Rect(obj.X, obj.Y, AbsoluteLayout.AutoSize, AbsoluteLayout.AutoSize));
-        AbsoluteLayout.SetLayoutFlags(col,
-            Microsoft.Maui.Layouts.AbsoluteLayoutFlags.PositionProportional);
+        AbsoluteLayout.SetLayoutBounds(col, new Rect(obj.X, obj.Y, AbsoluteLayout.AutoSize, AbsoluteLayout.AutoSize));
+        AbsoluteLayout.SetLayoutFlags(col, Microsoft.Maui.Layouts.AbsoluteLayoutFlags.PositionProportional);
 
         return col;
     }
@@ -318,12 +320,50 @@ public class GamePage : ContentPage
         if (result.IsGameEnd)
         {
             var el = DateTime.Now - _startTime;
-            await Task.Delay(900);
-            bool replay = await DisplayAlert("🎉 Võit!",
-                $"Palju õnne, {_game.Player.Name}!\nSeif on avatud!\n\nAeg: {(int)el.TotalMinutes:00}:{el.Seconds:00}",
-                "🔄 Uus mäng", "OK");
-            if (replay) await Navigation.PopAsync();
+            int totalSec = (int)el.TotalSeconds;
+
+            // Save to last 5 results
+            string raw = Preferences.Get("game_results", "");
+            var entries = raw.Length > 0
+                ? raw.Split(',').Where(x => x.Contains('|')).ToList()
+                : new List<string>();
+            entries.Insert(0, $"{_game.Player.Name}|{totalSec}");
+            Preferences.Set("game_results", string.Join(",", entries.Take(5)));
+
+            _gameTimer?.Stop();
+            await Task.Delay(600);
+            await DisplayAlert("Palju onnitleme!",
+                $"{_game.Player.Name}, avastasid aarde!\n\nAeg: {(int)el.TotalMinutes:00}:{el.Seconds:00}",
+                "Tagasi menüüsse");
+            await Navigation.PopAsync();
         }
+    }
+
+    // ── Smart hint ─────────────────────────────────────────────────
+    private string GetNextHint()
+    {
+        var p = _game.Player;
+
+        if (p.HasItem("key"))
+            return "Sul on voti — mine esimesse tuppa ja ava seif!";
+        if (!_game.VaseDestroyed && p.HasItem("pickaxe"))
+            return "Mine teise tuppa ja purusta kuvsin kirvega.";
+        if (p.HasItem("stick_rope") && p.HasItem("stone"))
+            return "Mine crafti — sega Kepp nooriga + Kivi = Kirves.";
+        if (p.HasItem("stick") && p.HasItem("rope"))
+            return "Mine crafti — sega Kepp + Noor = Kepp nooriga.";
+        if (!_game.RavenFed && p.HasItem("apple"))
+            return "Mine kolmandasse tuppa ja anna ronnile oun.";
+        if (!p.HasItem("rope") && !_game.RavenFed)
+            return p.HasItem("apple")
+                ? "Mine kolmandasse tuppa — anna ronnile oun, saad noori."
+                : "Vota esimesest toast oun, siis mine kolmandasse tuppa.";
+        if (!p.HasItem("stone"))
+            return "Vota teisest toast kivi.";
+        if (!p.HasItem("stick") && !p.HasItem("stick_rope") && !p.HasItem("pickaxe"))
+            return "Vota esimesest toast kepp.";
+
+        return "Uuri koiki tube tahelepanelikult.";
     }
 
     // ── Inventory ──────────────────────────────────────────────────
@@ -432,7 +472,7 @@ public class GamePage : ContentPage
         catch (OperationCanceledException) { }
     }
 
-    // ── Craft nav — safe, runs on main thread ──────────────────────
+    // ── Craft nav ──────────────────────────────────────────────────
     private void OnCraftClicked(object? sender, EventArgs e)
     {
         var craftPage = new CraftPage(_game);
@@ -453,9 +493,8 @@ public class GamePage : ContentPage
 
     private async void OnSettingsClicked(object? sender, EventArgs e)
     {
-        string? a = await DisplayActionSheet("⚙️ Seaded", "Tagasi", null,
-            "🌑 Tume", "📜 Seepia", "🌿 Mets");
-        var t = a switch { "🌑 Tume" => Theme.Dark, "📜 Seepia" => Theme.Sepia, "🌿 Mets" => Theme.Forest, _ => (Theme?)null };
+        string? a = await DisplayActionSheet("Seaded", "Tagasi", null, "Tume", "Seepia", "Mets");
+        var t = a switch { "Tume" => Theme.Dark, "Seepia" => Theme.Sepia, "Mets" => Theme.Forest, _ => (Theme?)null };
         if (t != null) { ApplyTheme(t); RenderRoom(); RefreshInventory(); }
     }
 }

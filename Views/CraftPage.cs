@@ -21,7 +21,7 @@ public class CraftPage : ContentPage
 
     public CraftPage(Game game)
     {
-        Shell.SetNavBarIsVisible(this, false);
+        NavigationPage.SetHasNavigationBar(this, false);
         _game = game;
         BuildUI();
         RefreshInventory();
@@ -35,7 +35,7 @@ public class CraftPage : ContentPage
         var header = new Grid { BackgroundColor = _game.CurrentTheme.CardColor, Padding = new Thickness(16, 14) };
         header.Add(new Label
         {
-            Text = "⚗️  Craft",
+            Text = "Craft",
             TextColor = _game.CurrentTheme.AccentColor,
             FontSize = 22,
             FontAttributes = FontAttributes.Bold,
@@ -88,7 +88,7 @@ public class CraftPage : ContentPage
         // Craft button
         _craftBtn = new Button
         {
-            Text = "⚗️  Kombineeri!",
+            Text = "Kombineeri!",
             BackgroundColor = _game.CurrentTheme.AccentColor,
             TextColor = Color.FromArgb("#0D1117"),
             FontSize = 17,
@@ -124,7 +124,7 @@ public class CraftPage : ContentPage
                 HorizontalOptions = LayoutOptions.Center,
                 Children =
                 {
-                    new Label { Text = "✨  Valmis!", TextColor = Colors.LightGreen, FontSize = 15, HorizontalOptions = LayoutOptions.Center },
+                    new Label { Text = "Valmis!", TextColor = Colors.LightGreen, FontSize = 15, HorizontalOptions = LayoutOptions.Center },
                     _resultImg, _resultName
                 }
             }
@@ -155,7 +155,7 @@ public class CraftPage : ContentPage
             Spacing = 12,
             Children =
             {
-                new Label { Text = "🎒  Inventar", TextColor = _game.CurrentTheme.AccentColor, FontSize = 16, FontAttributes = FontAttributes.Bold },
+                new Label { Text = "Inventar", TextColor = _game.CurrentTheme.AccentColor, FontSize = 16, FontAttributes = FontAttributes.Bold },
                 _invLayout
             }
         });
@@ -308,7 +308,7 @@ public class CraftPage : ContentPage
         {
             // FAIL — slots keep items, show error, shake
             _resultBorder.IsVisible = false;
-            _failLabel.Text = $"❌  {result.FailReason}";
+            _failLabel.Text = result.FailReason;
             _failLabel.IsVisible = true;
             uint d = 50;
             await _craftBtn.TranslateTo(-10, 0, d);

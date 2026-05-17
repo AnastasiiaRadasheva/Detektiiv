@@ -4,7 +4,6 @@ public class Item
 {
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";
-    public string Emoji { get; set; } = "❓";
     public string ImageSource { get; set; } = "";
     public string Description { get; set; } = "";
     public bool IsPickable { get; set; } = true;
@@ -15,7 +14,6 @@ public class Item
     {
         Id = "apple",
         Name = "Õun",
-        Emoji = "🍎",
         ImageSource = "oun.png",
         Description = "Punane värske õun."
     };
@@ -23,7 +21,6 @@ public class Item
     {
         Id = "stick",
         Name = "Kepp",
-        Emoji = "🪵",
         ImageSource = "puu.png",
         Description = "Tugev puidust kepp."
     };
@@ -31,7 +28,6 @@ public class Item
     {
         Id = "chest",
         Name = "Seif",
-        Emoji = "🗃️",
         ImageSource = "ceif.png",
         Description = "Lukustatud seif. Vajan võtit.",
         IsPickable = false
@@ -40,7 +36,6 @@ public class Item
     {
         Id = "chest_open",
         Name = "Avatud Seif",
-        Emoji = "🎉",
         ImageSource = "avatudseif.png",
         Description = "Seif on avatud!",
         IsPickable = false
@@ -51,7 +46,6 @@ public class Item
     {
         Id = "vase",
         Name = "Kuvšin",
-        Emoji = "🏺",
         ImageSource = "kuvsin.png",
         Description = "Ilus kuvšin. Millegi sees.",
         IsPickable = false
@@ -60,7 +54,6 @@ public class Item
     {
         Id = "vase_broken",
         Name = "Purunenud kuvšin",
-        Emoji = "💥",
         ImageSource = "kuvsinanet.png",
         Description = "Kuvšin on katki.",
         IsPickable = false
@@ -69,18 +62,17 @@ public class Item
     {
         Id = "stone",
         Name = "Kivi",
-        Emoji = "🪨",
         ImageSource = "kivi.png",
         Description = "Terav kivi."
     };
 
     // ── Room 3 ─────────────────────────────────────────────────────
+    // Raven starts with rope; after feeding it drops the rope
     public static Item Raven => new()
     {
         Id = "raven",
         Name = "Ronk",
-        Emoji = "🐦",
-        ImageSource = "voron.png",
+        ImageSource = "voronverevka.png",
         Description = "Must ronk vaatab sind tarkade silmadega.",
         IsPickable = false
     };
@@ -88,9 +80,8 @@ public class Item
     {
         Id = "raven_fed",
         Name = "Ronk (söönud)",
-        Emoji = "🐦",
-        ImageSource = "voronverevka.png",
-        Description = "Ronk hoiab nööri.",
+        ImageSource = "voron.png",
+        Description = "Ronk sai õuna.",
         IsPickable = false
     };
 
@@ -99,7 +90,6 @@ public class Item
     {
         Id = "key",
         Name = "Võti",
-        Emoji = "🗝️",
         ImageSource = "vott.png",
         Description = "Kuldne võti. Seifiks?"
     };
@@ -107,7 +97,6 @@ public class Item
     {
         Id = "rope",
         Name = "Nöör",
-        Emoji = "🪢",
         ImageSource = "verevka.png",
         Description = "Pikk tugev nöör."
     };
@@ -115,7 +104,6 @@ public class Item
     {
         Id = "stick_rope",
         Name = "Kepp + Nöör",
-        Emoji = "🪵",
         ImageSource = "puuiverevka.png",
         Description = "Kepp seotud nööriga."
     };
@@ -123,7 +111,6 @@ public class Item
     {
         Id = "pickaxe",
         Name = "Kirves",
-        Emoji = "⛏️",
         ImageSource = "kirves.png",
         Description = "Kirves on valmis!"
     };
