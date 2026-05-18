@@ -39,8 +39,4 @@ public class Theme
         InventoryColor = Color.FromArgb("#1A3A1A"),
     };
 
-    public void Apply(ContentPage page)
-    {
-        page.BackgroundColor = BackgroundColor;
-    }
 }

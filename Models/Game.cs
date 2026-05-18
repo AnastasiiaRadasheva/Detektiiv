@@ -128,12 +128,7 @@ public class Game
 
         VaseDestroyed = true;
 
-        // Stone is consumed; pickaxe stays
-        if (hasStone)
-        {
-            var stone = Player.GetItem("stone");
-            if (stone != null) Player.RemoveFromInventory(stone);
-        }
+        if (hasStone) Player.RemoveById("stone");
 
         // Swap sprite to broken
         obj.Item = Item.VaseBroken;
@@ -153,8 +148,7 @@ public class Game
             return Fail("Ronk vaatab sind nälgiva pilguga. Paku talle midagi.");
 
         RavenFed = true;
-        var apple = Player.GetItem("apple");
-        if (apple != null) Player.RemoveFromInventory(apple);
+        Player.RemoveById("apple");
 
         // Swap sprite to fed raven
         obj.Item = Item.RavenFed;
@@ -195,13 +189,7 @@ public class Game
             }
         }
 
-        // FailReason — items stay in slots (handled in UI)
-        string reason = (id1, id2) switch
-        {
-            _ when id1 == id2 => "Sama ese ei sobi iseendaga.",
-            _ => "Need esemed ei sobi kokku."
-        };
-        return new CraftResult { Success = false, FailReason = reason };
+        return new CraftResult { Success = false, FailReason = id1 == id2 ? "Sama ese ei sobi iseendaga." : "Need esemed ei sobi kokku." };
     }
 
     private static bool Match(string a, string b, string x, string y) =>

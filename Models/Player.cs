@@ -27,6 +27,7 @@ public class Player
 
     public bool HasItem(string itemId) => Inventory.Any(i => i.Id == itemId);
     public Item? GetItem(string itemId) => Inventory.FirstOrDefault(i => i.Id == itemId);
+    public void RemoveById(string itemId) { var item = GetItem(itemId); if (item != null) RemoveFromInventory(item); }
     public void AddStep() => Steps++;
     public void AddScore(int points) => Score += points;
 }

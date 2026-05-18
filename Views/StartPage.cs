@@ -30,13 +30,6 @@ public class StartPage : ContentPage
         _resultsGrid.Children.Clear();
         _resultsGrid.RowDefinitions.Clear();
 
-        if (raw.Length == 0)
-        {
-            _resultsBtn.IsVisible = false;
-            _resultsCard.IsVisible = false;
-            return;
-        }
-
         var entries = raw.Split(',')
             .Where(x => x.Contains('|'))
             .Select(x => x.Split('|'))
