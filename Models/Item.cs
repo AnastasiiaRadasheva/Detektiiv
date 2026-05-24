@@ -9,7 +9,6 @@ public class Item
     public bool IsPickable { get; set; } = true;
     public bool IsCollected { get; set; } = false;
 
-    // ── Room 1 ─────────────────────────────────────────────────────
     public static Item Apple => new()
     {
         Id = "apple",
@@ -41,7 +40,6 @@ public class Item
         IsPickable = false
     };
 
-    // ── Room 2 ─────────────────────────────────────────────────────
     public static Item Vase => new()
     {
         Id = "vase",
@@ -66,8 +64,6 @@ public class Item
         Description = "Terav kivi."
     };
 
-    // ── Room 3 ─────────────────────────────────────────────────────
-    // Raven starts with rope; after feeding it drops the rope
     public static Item Raven => new()
     {
         Id = "raven",
@@ -85,7 +81,6 @@ public class Item
         IsPickable = false
     };
 
-    // ── Inventory / craft items ────────────────────────────────────
     public static Item Key => new()
     {
         Id = "key",

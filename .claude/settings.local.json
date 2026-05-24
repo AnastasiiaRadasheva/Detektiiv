@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\edw1e\\\\source\\\\repos\\\\DetektivGame\" -Directory -Recurse | ForEach-Object { $_.FullName -replace [regex]::Escape\\(\"C:\\\\Users\\\\edw1e\\\\source\\\\repos\\\\DetektivGame\"\\), \".\" } | Sort-Object)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}

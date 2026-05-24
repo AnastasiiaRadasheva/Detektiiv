@@ -67,7 +67,6 @@ public class GamePage : ContentPage
 
     private void BuildUI()
     {
-        // TOP BAR: [← Home] [RoomName...] [Timer] [? Hint] [... Settings]
         _homeBtn = new Button { Text = "←", FontSize = 16, BackgroundColor = Colors.Transparent, Padding = new Thickness(4) };
         _homeBtn.Clicked += async (s, e) =>
         {
@@ -338,8 +337,6 @@ public class GamePage : ContentPage
             await Navigation.PopAsync();
         }
     }
-
-    // ── Smart hint ─────────────────────────────────────────────────
     private string GetNextHint()
     {
         var p = _game.Player;
@@ -366,7 +363,6 @@ public class GamePage : ContentPage
         return "Uuri koiki tube tahelepanelikult.";
     }
 
-    // ── Inventory ──────────────────────────────────────────────────
     private void RefreshInventory()
     {
         _inventoryLayout.Children.Clear();

@@ -71,7 +71,7 @@ public class Game
     public bool GoLeft() { if (!CurrentRoom.HasLeftRoom) return false; CurrentRoomIndex--; Player.AddStep(); return true; }
     public void SetTheme(Theme t) => CurrentTheme = t;
 
-    // ── Interact ───────────────────────────────────────────────────
+
     public InteractionResult InteractWithObject(string objectId)
     {
         var obj = CurrentRoom.GetObject(objectId);
