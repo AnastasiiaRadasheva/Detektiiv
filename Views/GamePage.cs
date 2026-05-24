@@ -95,7 +95,6 @@ public class GamePage : ContentPage
         _topBar.Add(_hintBtn, 3, 0);
         _topBar.Add(_settingsBtn, 4, 0);
 
-        // ROOM
         _objectsLayout = new AbsoluteLayout
         {
             InputTransparent = false,
@@ -103,7 +102,6 @@ public class GamePage : ContentPage
             VerticalOptions = LayoutOptions.Fill
         };
 
-        // Nav arrows
         _leftBtn = MakeNavBtn("◀");
         _rightBtn = MakeNavBtn("▶");
         _leftBtn.Clicked += async (s, e) => { if (!_isNavigating) { _isNavigating = true; await SlideOut(true); _game.GoLeft(); SlideIn(true); RenderRoom(); RefreshInventory(); _isNavigating = false; } };
@@ -124,7 +122,6 @@ public class GamePage : ContentPage
         _leftBtn.VerticalOptions = LayoutOptions.Center;
         _rightBtn.VerticalOptions = LayoutOptions.Center;
 
-        // Dots at bottom-center
         _dot0 = MakeDot(); _dot1 = MakeDot(); _dot2 = MakeDot();
         var dots = new HorizontalStackLayout
         {
@@ -143,7 +140,6 @@ public class GamePage : ContentPage
         _roomGrid.Add(navGrid,        0, 0);
         _roomGrid.Add(dots,           0, 0);
 
-        // INVENTORY BAR
         _invTitle = new Label { Text = "Inventar", FontSize = 13, FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center };
         _craftBtn = new Button
         {

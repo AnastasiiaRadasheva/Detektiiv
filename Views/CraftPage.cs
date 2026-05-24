@@ -1,5 +1,6 @@
 using DetektivGame.Models;
 using Microsoft.Maui.Controls.Shapes;
+using Microsoft.Maui.Layouts;
 
 namespace DetektivGame.Views;
 
@@ -9,15 +10,27 @@ public class CraftPage : ContentPage
     private Item? _slot1, _slot2;
     private bool _isNavigatingBack = false;
 
+    // Slots
     private Image _s1Img = null!, _s2Img = null!;
     private Label _s1Name = null!, _s2Name = null!;
     private Border _s1Border = null!, _s2Border = null!;
+
+    // Craft result
     private Button _craftBtn = null!;
     private Border _resultBorder = null!;
     private Image _resultImg = null!;
     private Label _resultName = null!;
     private Label _failLabel = null!;
-    private FlexLayout _invLayout = null!;
+
+    // Inventory (max 3 items, no ScrollView needed)
+    private HorizontalStackLayout _invLayout = null!;
+
+    // ── Drag state ────────────────────────────────────────────────────────────
+    private AbsoluteLayout _rootAbsolute = null!;
+    private Border? _ghostView = null;
+    private Item? _draggedItem = null;
+    private bool _isDragging = false;
+    private Point _ghostStartPos = Point.Zero;
 
     public CraftPage(Game game)
     {
@@ -31,8 +44,12 @@ public class CraftPage : ContentPage
     {
         BackgroundColor = _game.CurrentTheme.BackgroundColor;
 
-        // Header
-        var header = new Grid { BackgroundColor = _game.CurrentTheme.CardColor, Padding = new Thickness(16, 14) };
+        // ── Header ────────────────────────────────────────────────────────────
+        var header = new Grid
+        {
+            BackgroundColor = _game.CurrentTheme.CardColor,
+            Padding = new Thickness(16, 14)
+        };
         header.Add(new Label
         {
             Text = "Craft",
@@ -42,9 +59,9 @@ public class CraftPage : ContentPage
             HorizontalOptions = LayoutOptions.Center
         });
 
-        // Slot 1
-        _s1Img = new Image { Aspect = Aspect.AspectFit, WidthRequest = 70, HeightRequest = 70, BackgroundColor = Colors.Transparent };
-        _s1Name = new Label { Text = "Tühi", FontSize = 12, TextColor = Color.FromArgb("#8899AA"), HorizontalOptions = LayoutOptions.Center };
+        // ── Slot 1 ────────────────────────────────────────────────────────────
+        _s1Img = MakeSlotImage();
+        _s1Name = MakeSlotLabel("Tühi");
         _s1Border = MakeSlot(new VerticalStackLayout
         {
             Spacing = 4,
@@ -52,12 +69,13 @@ public class CraftPage : ContentPage
             VerticalOptions = LayoutOptions.Center,
             Children = { _s1Img, _s1Name }
         });
-        _s1Border.GestureRecognizers.Add(MakeClearTap(true));
-        AddDropTarget(_s1Border, true);
+        var t1 = new TapGestureRecognizer();
+        t1.Tapped += (_, _) => { ClearSlot1(); RefreshInventory(); UpdateBtn(); };
+        _s1Border.GestureRecognizers.Add(t1);
 
-        // Slot 2
-        _s2Img = new Image { Aspect = Aspect.AspectFit, WidthRequest = 70, HeightRequest = 70, BackgroundColor = Colors.Transparent };
-        _s2Name = new Label { Text = "Tühi", FontSize = 12, TextColor = Color.FromArgb("#8899AA"), HorizontalOptions = LayoutOptions.Center };
+        // ── Slot 2 ────────────────────────────────────────────────────────────
+        _s2Img = MakeSlotImage();
+        _s2Name = MakeSlotLabel("Tühi");
         _s2Border = MakeSlot(new VerticalStackLayout
         {
             Spacing = 4,
@@ -65,9 +83,11 @@ public class CraftPage : ContentPage
             VerticalOptions = LayoutOptions.Center,
             Children = { _s2Img, _s2Name }
         });
-        _s2Border.GestureRecognizers.Add(MakeClearTap(false));
-        AddDropTarget(_s2Border, false);
+        var t2 = new TapGestureRecognizer();
+        t2.Tapped += (_, _) => { ClearSlot2(); RefreshInventory(); UpdateBtn(); };
+        _s2Border.GestureRecognizers.Add(t2);
 
+        // ── Slots row ─────────────────────────────────────────────────────────
         var plus = new Label
         {
             Text = "+",
@@ -76,7 +96,6 @@ public class CraftPage : ContentPage
             VerticalOptions = LayoutOptions.Center,
             HorizontalOptions = LayoutOptions.Center
         };
-
         var slotsRow = new Grid { ColumnSpacing = 10, HorizontalOptions = LayoutOptions.Center };
         slotsRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
         slotsRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
@@ -85,7 +104,7 @@ public class CraftPage : ContentPage
         slotsRow.Add(plus, 1, 0);
         slotsRow.Add(_s2Border, 2, 0);
 
-        // Craft button
+        // ── Craft button ──────────────────────────────────────────────────────
         _craftBtn = new Button
         {
             Text = "Kombineeri!",
@@ -99,17 +118,22 @@ public class CraftPage : ContentPage
         };
         _craftBtn.Clicked += OnCraftClicked;
 
-        // Fail + result
+        // ── Fail + result ─────────────────────────────────────────────────────
         _failLabel = new Label
         {
-            Text = "",
             TextColor = Colors.OrangeRed,
             FontSize = 13,
             HorizontalOptions = LayoutOptions.Center,
             IsVisible = false
         };
-        _resultImg = new Image { Aspect = Aspect.AspectFit, HeightRequest = 80, WidthRequest = 80, BackgroundColor = Colors.Transparent };
-        _resultName = new Label { TextColor = Colors.LightGreen, FontSize = 16, FontAttributes = FontAttributes.Bold, HorizontalOptions = LayoutOptions.Center };
+        _resultImg = new Image { Aspect = Aspect.AspectFit, HeightRequest = 80, WidthRequest = 80 };
+        _resultName = new Label
+        {
+            TextColor = Colors.LightGreen,
+            FontSize = 16,
+            FontAttributes = FontAttributes.Bold,
+            HorizontalOptions = LayoutOptions.Center
+        };
         _resultBorder = new Border
         {
             IsVisible = false,
@@ -125,7 +149,8 @@ public class CraftPage : ContentPage
                 Children =
                 {
                     new Label { Text = "Valmis!", TextColor = Colors.LightGreen, FontSize = 15, HorizontalOptions = LayoutOptions.Center },
-                    _resultImg, _resultName
+                    _resultImg,
+                    _resultName
                 }
             }
         };
@@ -135,7 +160,13 @@ public class CraftPage : ContentPage
             Spacing = 16,
             Children =
             {
-                new Label { Text = "Tüki esemele slotti  •  tüki slotile = eemalda", TextColor = Color.FromArgb("#667788"), FontSize = 12, HorizontalOptions = LayoutOptions.Center },
+                new Label
+                {
+                    Text = "Lohista ese slotti  •  tüki slotile = eemalda",
+                    TextColor = Color.FromArgb("#667788"),
+                    FontSize = 12,
+                    HorizontalOptions = LayoutOptions.Center
+                },
                 slotsRow,
                 _craftBtn,
                 _failLabel,
@@ -143,24 +174,30 @@ public class CraftPage : ContentPage
             }
         });
 
-        // Inventory
-        _invLayout = new FlexLayout
+        // ── Inventory ─────────────────────────────────────────────────────────
+        _invLayout = new HorizontalStackLayout
         {
-            Wrap = Microsoft.Maui.Layouts.FlexWrap.Wrap,
-            JustifyContent = Microsoft.Maui.Layouts.FlexJustify.Start,
-            AlignItems = Microsoft.Maui.Layouts.FlexAlignItems.Center
+            Spacing = 10,
+            HorizontalOptions = LayoutOptions.Center
         };
+
         var invCard = MakeCard(new VerticalStackLayout
         {
             Spacing = 12,
             Children =
             {
-                new Label { Text = "Inventar", TextColor = _game.CurrentTheme.AccentColor, FontSize = 16, FontAttributes = FontAttributes.Bold },
+                new Label
+                {
+                    Text = "Inventar",
+                    TextColor = _game.CurrentTheme.AccentColor,
+                    FontSize = 16,
+                    FontAttributes = FontAttributes.Bold
+                },
                 _invLayout
             }
         });
 
-        // Back
+        // ── Back button ───────────────────────────────────────────────────────
         var backBtn = new Button
         {
             Text = "←  Tagasi mängu",
@@ -169,159 +206,387 @@ public class CraftPage : ContentPage
             FontSize = 16,
             HeightRequest = 54
         };
-        backBtn.Clicked += async (s, e) =>
+        backBtn.Clicked += async (_, _) =>
         {
             if (_isNavigatingBack) return;
             _isNavigatingBack = true;
             await Navigation.PopAsync();
         };
 
-        var root = new Grid();
-        root.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-        root.RowDefinitions.Add(new RowDefinition(GridLength.Star));
-        root.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-        root.Add(header, 0, 0);
-        root.Add(new ScrollView
+        var contentStack = new VerticalStackLayout
         {
-            Content = new VerticalStackLayout
-            {
-                Padding = new Thickness(16),
-                Spacing = 14,
-                Children = { craftCard, invCard }
-            }
-        }, 0, 1);
-        root.Add(backBtn, 0, 2);
-        Content = root;
-    }
-
-    // ── Slot helpers ───────────────────────────────────────────────
-    private TapGestureRecognizer MakeClearTap(bool isSlot1)
-    {
-        var tap = new TapGestureRecognizer();
-        tap.Tapped += (s, e) =>
-        {
-            if (isSlot1) ClearSlot1(); else ClearSlot2();
-            RefreshInventory(); UpdateBtn();
+            Padding = new Thickness(16),
+            Spacing = 14,
+            Children = { craftCard, invCard }
         };
-        return tap;
+
+        var pageGrid = new Grid();
+        pageGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+        pageGrid.RowDefinitions.Add(new RowDefinition(GridLength.Star));
+        pageGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+        pageGrid.Add(header, 0, 0);
+        pageGrid.Add(contentStack, 0, 1);
+        pageGrid.Add(backBtn, 0, 2);
+
+        _rootAbsolute = new AbsoluteLayout();
+        AbsoluteLayout.SetLayoutBounds(pageGrid, new Rect(0, 0, 1, 1));
+        AbsoluteLayout.SetLayoutFlags(pageGrid, AbsoluteLayoutFlags.SizeProportional);
+        _rootAbsolute.Add(pageGrid);
+
+        Content = _rootAbsolute;
     }
 
-    private void AddDropTarget(Border slot, bool isSlot1)
-    {
-        var drop = new DropGestureRecognizer { AllowDrop = true };
-        drop.DragOver += (s, e) => e.AcceptedOperation = DataPackageOperation.Copy;
-        drop.Drop += (s, e) =>
-        {
-            if (e.Data.Properties.TryGetValue("item_id", out var obj) && obj is string id)
-            {
-                var item = _game.Player.GetItem(id);
-                if (item == null) return;
-                if (isSlot1) FillSlot1(item); else FillSlot2(item);
-                RefreshInventory(); UpdateBtn();
-            }
-        };
-        slot.GestureRecognizers.Add(drop);
-    }
-
-    private void FillSlot1(Item i) { _slot1 = i; _s1Img.Source = i.ImageSource; _s1Name.Text = i.Name; _s1Border.BackgroundColor = Color.FromArgb("#2A200A"); _s1Border.Stroke = new SolidColorBrush(Color.FromArgb("#C9A84C")); }
-    private void FillSlot2(Item i) { _slot2 = i; _s2Img.Source = i.ImageSource; _s2Name.Text = i.Name; _s2Border.BackgroundColor = Color.FromArgb("#2A200A"); _s2Border.Stroke = new SolidColorBrush(Color.FromArgb("#C9A84C")); }
-    private void ClearSlot1() { _slot1 = null; _s1Img.Source = null; _s1Name.Text = "Tühi"; _s1Border.BackgroundColor = Color.FromArgb("#0D1520"); _s1Border.Stroke = new SolidColorBrush(Color.FromArgb("#3A5080")); }
-    private void ClearSlot2() { _slot2 = null; _s2Img.Source = null; _s2Name.Text = "Tühi"; _s2Border.BackgroundColor = Color.FromArgb("#0D1520"); _s2Border.Stroke = new SolidColorBrush(Color.FromArgb("#3A5080")); }
-    private void UpdateBtn() => _craftBtn.IsEnabled = _slot1 != null && _slot2 != null;
-
-    // ── Inventory ──────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    //  INVENTORY — показываем только предметы, которых НЕТ в слотах
+    // ─────────────────────────────────────────────────────────────────────────
     private void RefreshInventory()
     {
         _invLayout.Children.Clear();
-        if (!_game.Player.Inventory.Any())
+
+        // Фильтруем: только те предметы, которые не заняты в слотах
+        var available = _game.Player.Inventory
+            .Where(i => i != _slot1 && i != _slot2)
+            .ToList();
+
+        if (!available.Any())
         {
-            _invLayout.Add(new Label { Text = "Inventar on tühi.", TextColor = Color.FromArgb("#667788"), FontSize = 13 });
+            // Если все предметы в слотах или инвентарь пуст — пустое место
+            // (не показываем текст, чтобы UI не прыгал)
             return;
         }
 
-        foreach (var item in _game.Player.Inventory)
+        foreach (var item in available)
         {
-            bool inSlot = (_slot1 == item || _slot2 == item);
+            var capturedItem = item;
 
-            var img = new Image { Source = item.ImageSource, Aspect = Aspect.AspectFit, HeightRequest = 60, WidthRequest = 60, BackgroundColor = Colors.Transparent };
-            var name = new Label { Text = item.Name, FontSize = 10, HorizontalOptions = LayoutOptions.Center, TextColor = inSlot ? Color.FromArgb("#FFE599") : Color.FromArgb("#C8DEFF"), MaxLines = 1, LineBreakMode = LineBreakMode.TailTruncation };
+            var img = new Image
+            {
+                Source = item.ImageSource,
+                Aspect = Aspect.AspectFit,
+                HeightRequest = 60,
+                WidthRequest = 60,
+                BackgroundColor = Colors.Transparent
+            };
+
+            var nameLabel = new Label
+            {
+                Text = item.Name,
+                FontSize = 10,
+                HorizontalOptions = LayoutOptions.Center,
+                TextColor = Color.FromArgb("#C8DEFF"),
+                MaxLines = 1,
+                LineBreakMode = LineBreakMode.TailTruncation
+            };
 
             var border = new Border
             {
                 WidthRequest = 88,
                 HeightRequest = 100,
-                Margin = new Thickness(4),
-                BackgroundColor = inSlot ? Color.FromArgb("#251A04") : Color.FromArgb("#0E1B2E"),
-                Stroke = new SolidColorBrush(inSlot ? Color.FromArgb("#C9A84C") : Color.FromArgb("#2D5099")),
-                StrokeThickness = inSlot ? 2 : 1.5,
+                BackgroundColor = Color.FromArgb("#0E1B2E"),
+                Stroke = new SolidColorBrush(Color.FromArgb("#2D5099")),
+                StrokeThickness = 1.5,
                 StrokeShape = new RoundRectangle { CornerRadius = 16 },
                 Padding = new Thickness(6, 8, 6, 6),
-                Content = new VerticalStackLayout { Spacing = 3, Children = { img, name } }
+                Content = new VerticalStackLayout
+                {
+                    Spacing = 3,
+                    Children = { img, nameLabel }
+                }
             };
 
-            var capturedItem = item;
+            AttachDragGesture(border, capturedItem);
+
+            // Tap — быстрое добавление в слот
             var tap = new TapGestureRecognizer();
-            tap.Tapped += (s, e) =>
+            tap.Tapped += (_, _) =>
             {
-                if (_slot1 == capturedItem) ClearSlot1();
-                else if (_slot2 == capturedItem) ClearSlot2();
-                else if (_slot1 == null) FillSlot1(capturedItem);
+                if (_slot1 == null) FillSlot1(capturedItem);
                 else if (_slot2 == null) FillSlot2(capturedItem);
-                else FillSlot1(capturedItem);
-                RefreshInventory(); UpdateBtn();
+                else FillSlot1(capturedItem); // заменить слот 1
+                RefreshInventory();
+                UpdateBtn();
             };
             border.GestureRecognizers.Add(tap);
-
-            var drag = new DragGestureRecognizer { CanDrag = true };
-            drag.DragStarting += (s, e) => e.Data.Properties["item_id"] = capturedItem.Id;
-            border.GestureRecognizers.Add(drag);
 
             _invLayout.Add(border);
         }
     }
 
-    // ── Craft ──────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    //  DRAG
+    // ─────────────────────────────────────────────────────────────────────────
+    private void AttachDragGesture(Border cardBorder, Item item)
+    {
+        var pan = new PanGestureRecognizer();
+
+        pan.PanUpdated += async (_, e) =>
+        {
+            switch (e.StatusType)
+            {
+                case GestureStatus.Started:
+                    {
+                        if (_isDragging) break;
+                        _isDragging = true;
+                        _draggedItem = item;
+
+                        _ = cardBorder.FadeTo(0.3, 100);
+                        _ghostStartPos = GetAbsolutePosition(cardBorder);
+
+                        _ghostView = new Border
+                        {
+                            WidthRequest = 88,
+                            HeightRequest = 100,
+                            BackgroundColor = Color.FromArgb("#2A200A"),
+                            Stroke = new SolidColorBrush(Color.FromArgb("#C9A84C")),
+                            StrokeThickness = 2,
+                            StrokeShape = new RoundRectangle { CornerRadius = 16 },
+                            Padding = new Thickness(6, 8, 6, 6),
+                            Opacity = 0.9,
+                            InputTransparent = true,
+                            Content = new VerticalStackLayout
+                            {
+                                Spacing = 3,
+                                Children =
+                            {
+                                new Image
+                                {
+                                    Source        = item.ImageSource,
+                                    Aspect        = Aspect.AspectFit,
+                                    HeightRequest = 60,
+                                    WidthRequest  = 60
+                                },
+                                new Label
+                                {
+                                    Text              = item.Name,
+                                    FontSize          = 10,
+                                    HorizontalOptions = LayoutOptions.Center,
+                                    TextColor         = Color.FromArgb("#FFE599"),
+                                    MaxLines          = 1,
+                                    LineBreakMode     = LineBreakMode.TailTruncation
+                                }
+                            }
+                            }
+                        };
+
+                        AbsoluteLayout.SetLayoutBounds(
+                            _ghostView,
+                            new Rect(_ghostStartPos.X, _ghostStartPos.Y, 88, 100));
+                        AbsoluteLayout.SetLayoutFlags(_ghostView, AbsoluteLayoutFlags.None);
+                        _rootAbsolute.Add(_ghostView);
+
+                        HighlightSlots(true);
+                        break;
+                    }
+
+                case GestureStatus.Running:
+                    {
+                        if (_ghostView == null || !_isDragging) break;
+                        _ghostView.TranslationX = e.TotalX;
+                        _ghostView.TranslationY = e.TotalY;
+                        UpdateSlotGlow();
+                        break;
+                    }
+
+                case GestureStatus.Completed:
+                case GestureStatus.Canceled:
+                    {
+                        if (!_isDragging) break;
+                        _isDragging = false;
+
+                        _ = cardBorder.FadeTo(1.0, 100);
+                        HighlightSlots(false);
+
+                        int target = HitTestSlots();
+                        if (target == 1 && _draggedItem != null) { FillSlot1(_draggedItem); RefreshInventory(); UpdateBtn(); }
+                        if (target == 2 && _draggedItem != null) { FillSlot2(_draggedItem); RefreshInventory(); UpdateBtn(); }
+
+                        if (_ghostView != null)
+                        {
+                            var g = _ghostView;
+                            _ghostView = null;
+                            await g.FadeTo(0, 100);
+                            _rootAbsolute.Remove(g);
+                        }
+
+                        _draggedItem = null;
+                        break;
+                    }
+            }
+        };
+
+        cardBorder.GestureRecognizers.Add(pan);
+    }
+
+    // ── Walk up parent tree to get absolute position ──────────────────────────
+    private Point GetAbsolutePosition(View view)
+    {
+        double x = 0, y = 0;
+        Element? current = view;
+        while (current != null && current != _rootAbsolute)
+        {
+            if (current is VisualElement ve)
+            {
+                x += ve.Bounds.X;
+                y += ve.Bounds.Y;
+            }
+            current = current.Parent;
+        }
+        return new Point(x, y);
+    }
+
+    // ── Is ghost center inside a slot? ────────────────────────────────────────
+    private int HitTestSlots()
+    {
+        if (_ghostView == null) return 0;
+
+        double cx = _ghostStartPos.X + _ghostView.TranslationX + 44;
+        double cy = _ghostStartPos.Y + _ghostView.TranslationY + 50;
+
+        var p1 = GetAbsolutePosition(_s1Border);
+        var p2 = GetAbsolutePosition(_s2Border);
+
+        if (new Rect(p1.X, p1.Y, _s1Border.Width, _s1Border.Height).Contains(cx, cy) && _slot1 == null)
+            return 1;
+        if (new Rect(p2.X, p2.Y, _s2Border.Width, _s2Border.Height).Contains(cx, cy) && _slot2 == null)
+            return 2;
+
+        return 0;
+    }
+
+    private void UpdateSlotGlow()
+    {
+        int over = HitTestSlots();
+        _s1Border.BackgroundColor = (over == 1 && _slot1 == null)
+            ? Color.FromArgb("#1A301A")
+            : (_slot1 == null ? Color.FromArgb("#0D1520") : Color.FromArgb("#2A200A"));
+        _s2Border.BackgroundColor = (over == 2 && _slot2 == null)
+            ? Color.FromArgb("#1A301A")
+            : (_slot2 == null ? Color.FromArgb("#0D1520") : Color.FromArgb("#2A200A"));
+    }
+
+    private void HighlightSlots(bool on)
+    {
+        if (on)
+        {
+            if (_slot1 == null) { _s1Border.Stroke = new SolidColorBrush(Color.FromArgb("#44CC66")); _s1Border.StrokeThickness = 2; }
+            if (_slot2 == null) { _s2Border.Stroke = new SolidColorBrush(Color.FromArgb("#44CC66")); _s2Border.StrokeThickness = 2; }
+        }
+        else
+        {
+            _s1Border.Stroke = new SolidColorBrush(_slot1 == null ? Color.FromArgb("#3A5080") : Color.FromArgb("#C9A84C"));
+            _s1Border.StrokeThickness = _slot1 == null ? 1.5 : 2;
+            _s2Border.Stroke = new SolidColorBrush(_slot2 == null ? Color.FromArgb("#3A5080") : Color.FromArgb("#C9A84C"));
+            _s2Border.StrokeThickness = _slot2 == null ? 1.5 : 2;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  SLOT FILL / CLEAR
+    // ─────────────────────────────────────────────────────────────────────────
+    private void FillSlot1(Item i)
+    {
+        // Если этот предмет уже был в слоте 2 — освобождаем слот 2
+        if (_slot2 == i) ClearSlot2();
+
+        _slot1 = i;
+        _s1Img.Source = i.ImageSource;
+        _s1Name.Text = i.Name;
+        _s1Border.BackgroundColor = Color.FromArgb("#2A200A");
+        _s1Border.Stroke = new SolidColorBrush(Color.FromArgb("#C9A84C"));
+        _s1Border.StrokeThickness = 2;
+    }
+
+    private void FillSlot2(Item i)
+    {
+        // Если этот предмет уже был в слоте 1 — освобождаем слот 1
+        if (_slot1 == i) ClearSlot1();
+
+        _slot2 = i;
+        _s2Img.Source = i.ImageSource;
+        _s2Name.Text = i.Name;
+        _s2Border.BackgroundColor = Color.FromArgb("#2A200A");
+        _s2Border.Stroke = new SolidColorBrush(Color.FromArgb("#C9A84C"));
+        _s2Border.StrokeThickness = 2;
+    }
+
+    private void ClearSlot1()
+    {
+        _slot1 = null;
+        _s1Img.Source = null;
+        _s1Name.Text = "Tühi";
+        _s1Border.BackgroundColor = Color.FromArgb("#0D1520");
+        _s1Border.Stroke = new SolidColorBrush(Color.FromArgb("#3A5080"));
+        _s1Border.StrokeThickness = 1.5;
+    }
+
+    private void ClearSlot2()
+    {
+        _slot2 = null;
+        _s2Img.Source = null;
+        _s2Name.Text = "Tühi";
+        _s2Border.BackgroundColor = Color.FromArgb("#0D1520");
+        _s2Border.Stroke = new SolidColorBrush(Color.FromArgb("#3A5080"));
+        _s2Border.StrokeThickness = 1.5;
+    }
+
+    private void UpdateBtn() => _craftBtn.IsEnabled = _slot1 != null && _slot2 != null;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  CRAFT
+    // ─────────────────────────────────────────────────────────────────────────
     private async void OnCraftClicked(object? sender, EventArgs e)
     {
         if (_slot1 == null || _slot2 == null || _isNavigatingBack) return;
 
-        await _craftBtn.ScaleTo(0.92, (uint)80);
-        await _craftBtn.ScaleTo(1.0, (uint)80);
+        await _craftBtn.ScaleTo(0.92, 80);
+        await _craftBtn.ScaleTo(1.0, 80);
 
         var result = _game.TryCraft(_slot1.Id, _slot2.Id);
 
         if (result.Success && result.CraftedItem != null)
         {
-            // Clear slots only on success
             ClearSlot1(); ClearSlot2(); UpdateBtn();
             _failLabel.IsVisible = false;
             _resultImg.Source = result.CraftedItem.ImageSource;
             _resultName.Text = result.CraftedItem.Name;
             _resultBorder.IsVisible = true;
-            await _resultBorder.ScaleTo(1.08, (uint)180);
-            await _resultBorder.ScaleTo(1.0, (uint)180);
+            await _resultBorder.ScaleTo(1.08, 180);
+            await _resultBorder.ScaleTo(1.0, 180);
             RefreshInventory();
-
-            // no alert here — result border already shows success; chest awaits in room 1
         }
         else
         {
-            // FAIL — slots keep items, show error, shake
             _resultBorder.IsVisible = false;
             _failLabel.Text = result.FailReason;
             _failLabel.IsVisible = true;
-            uint d = 50;
-            await _craftBtn.TranslateTo(-10, 0, d);
-            await _craftBtn.TranslateTo(10, 0, d);
-            await _craftBtn.TranslateTo(-5, 0, d);
-            await _craftBtn.TranslateTo(0, 0, d);
-            // Items stay in slots — no clear
+            await _craftBtn.TranslateTo(-10, 0, 50);
+            await _craftBtn.TranslateTo(10, 0, 50);
+            await _craftBtn.TranslateTo(-5, 0, 50);
+            await _craftBtn.TranslateTo(0, 0, 50);
             await Task.Delay(3000);
             if (_failLabel.IsVisible) _failLabel.IsVisible = false;
         }
     }
 
-    // ── Helpers ────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    //  UI HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+    private static Image MakeSlotImage() => new()
+    {
+        Aspect = Aspect.AspectFit,
+        WidthRequest = 70,
+        HeightRequest = 70,
+        BackgroundColor = Colors.Transparent
+    };
+
+    private static Label MakeSlotLabel(string text) => new()
+    {
+        Text = text,
+        FontSize = 12,
+        TextColor = Color.FromArgb("#8899AA"),
+        HorizontalOptions = LayoutOptions.Center
+    };
+
     private Border MakeCard(View content) => new()
     {
         BackgroundColor = Color.FromArgb("#0F1318"),
