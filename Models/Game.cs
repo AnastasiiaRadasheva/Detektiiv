@@ -120,15 +120,13 @@ public class Game
     {
         if (VaseDestroyed) return Fail("Kuvšin on juba purustatud.");
 
-        bool hasStone = Player.HasItem("stone");
         bool hasPickaxe = Player.HasItem("pickaxe");
 
-        if (!hasStone && !hasPickaxe)
+        if ( !hasPickaxe)
             return Fail("Vajan midagi kõva, et kuvšini purustada.");
 
         VaseDestroyed = true;
 
-        if (hasStone) Player.RemoveById("stone");
 
         // Swap sprite to broken
         obj.Item = Item.VaseBroken;
