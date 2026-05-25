@@ -22,9 +22,15 @@ public class Game
     public List<Room> Rooms { get; private set; }
     public int CurrentRoomIndex { get; private set; } = 0;
     public Room CurrentRoom => Rooms[CurrentRoomIndex];
+
+
+
     public bool VaseDestroyed { get; private set; } = false;
     public bool ChestOpened { get; private set; } = false;
     public bool RavenFed { get; private set; } = false;
+
+
+
     public Theme CurrentTheme { get; private set; } = Theme.Dark;
 
     public Game(string playerName)
@@ -128,7 +134,6 @@ public class Game
         VaseDestroyed = true;
 
 
-        // Swap sprite to broken
         obj.Item = Item.VaseBroken;
         obj.IsInteractable = false;
         obj.Width = 110;
@@ -148,7 +153,6 @@ public class Game
         RavenFed = true;
         Player.RemoveById("apple");
 
-        // Swap sprite to fed raven
         obj.Item = Item.RavenFed;
         obj.IsInteractable = false;
 
@@ -157,7 +161,6 @@ public class Game
         return Ok("Ronk võttis õuna ja andis sulle nööri!", updateRoom: true);
     }
 
-    // ── Craft ──────────────────────────────────────────────────────
     public CraftResult TryCraft(string id1, string id2)
     {
         if (Match(id1, id2, "stick", "rope"))
@@ -183,7 +186,7 @@ public class Game
                 Player.RemoveFromInventory(st);
                 Player.AddToInventory(Item.Pickaxe);
                 Player.AddScore(50);
-                return new CraftResult { Success = true, CraftedItem = Item.Pickaxe, IsGameEnd = true };
+                return new CraftResult { Success = true, CraftedItem = Item.Pickaxe };
             }
         }
 

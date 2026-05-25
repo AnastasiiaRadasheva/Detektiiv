@@ -168,7 +168,6 @@ public class GamePage : ContentPage
         _invBar.Add(invTopRow, 0, 0);
         _invBar.Add(invScroll, 0, 1);
 
-        // MESSAGE — overlay at bottom of room
         _msgLabel = new Label { FontSize = 14, HorizontalTextAlignment = TextAlignment.Center, MaxLines = 2 };
         _msgBorder = new Border
         {
@@ -184,7 +183,6 @@ public class GamePage : ContentPage
         };
         _roomGrid.Add(_msgBorder, 0, 0);
 
-        // ROOT
         var root = new Grid();
         root.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
         root.RowDefinitions.Add(new RowDefinition(GridLength.Star));
@@ -233,7 +231,6 @@ public class GamePage : ContentPage
         _msgBorder.Stroke = new SolidColorBrush(t.AccentColor);
     }
 
-    // ── Room ───────────────────────────────────────────────────────
     private void RenderRoom()
     {
         var room = _game.CurrentRoom;
@@ -317,7 +314,6 @@ public class GamePage : ContentPage
             var el = DateTime.Now - _startTime;
             int totalSec = (int)el.TotalSeconds;
 
-            // Save to last 5 results
             string raw = Preferences.Get("game_results", "");
             var entries = raw.Length > 0
                 ? raw.Split(',').Where(x => x.Contains('|')).ToList()
@@ -326,7 +322,6 @@ public class GamePage : ContentPage
             Preferences.Set("game_results", string.Join(",", entries.Take(5)));
 
             _gameTimer?.Stop();
-            await Task.Delay(600);
             await DisplayAlert("Palju onnitleme!",
                 $"{_game.Player.Name}, avastasid aarde!\n\nAeg: {(int)el.TotalMinutes:00}:{el.Seconds:00}",
                 "Tagasi menüüsse");
@@ -426,7 +421,6 @@ public class GamePage : ContentPage
         StrokeShape = new RoundRectangle { CornerRadius = 16 }
     };
 
-    // ── Navigation ─────────────────────────────────────────────────
     private async Task SlideOut(bool left) =>
         await _roomGrid.TranslateTo(left ? 320 : -320, 0, (uint)160, Easing.CubicIn);
 
@@ -445,7 +439,6 @@ public class GamePage : ContentPage
         _dot2.Fill = _game.CurrentRoomIndex == 2 ? accent : grey;
     }
 
-    // ── Message ────────────────────────────────────────────────────
     private async Task ShowMsg(string text, bool ok)
     {
         _msgCts?.Cancel();
@@ -464,7 +457,6 @@ public class GamePage : ContentPage
         catch (OperationCanceledException) { }
     }
 
-    // ── Craft nav ──────────────────────────────────────────────────
     private void OnCraftClicked(object? sender, EventArgs e)
     {
         var craftPage = new CraftPage(_game);

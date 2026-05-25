@@ -10,22 +10,18 @@ public class CraftPage : ContentPage
     private Item? _slot1, _slot2;
     private bool _isNavigatingBack = false;
 
-    // Slots
     private Image _s1Img = null!, _s2Img = null!;
     private Label _s1Name = null!, _s2Name = null!;
     private Border _s1Border = null!, _s2Border = null!;
 
-    // Craft result
     private Button _craftBtn = null!;
     private Border _resultBorder = null!;
     private Image _resultImg = null!;
     private Label _resultName = null!;
     private Label _failLabel = null!;
 
-    // Inventory (max 3 items, no ScrollView needed)
     private HorizontalStackLayout _invLayout = null!;
 
-    // ── Drag state ────────────────────────────────────────────────────────────
     private AbsoluteLayout _rootAbsolute = null!;
     private Border? _ghostView = null;
     private Item? _draggedItem = null;
@@ -44,7 +40,6 @@ public class CraftPage : ContentPage
     {
         BackgroundColor = _game.CurrentTheme.BackgroundColor;
 
-        // ── Header ────────────────────────────────────────────────────────────
         var header = new Grid
         {
             BackgroundColor = _game.CurrentTheme.CardColor,
@@ -59,7 +54,6 @@ public class CraftPage : ContentPage
             HorizontalOptions = LayoutOptions.Center
         });
 
-        // ── Slot 1 ────────────────────────────────────────────────────────────
         _s1Img = MakeSlotImage();
         _s1Name = MakeSlotLabel("Tühi");
         _s1Border = MakeSlot(new VerticalStackLayout
@@ -73,7 +67,6 @@ public class CraftPage : ContentPage
         t1.Tapped += (_, _) => { ClearSlot1(); RefreshInventory(); UpdateBtn(); };
         _s1Border.GestureRecognizers.Add(t1);
 
-        // ── Slot 2 ────────────────────────────────────────────────────────────
         _s2Img = MakeSlotImage();
         _s2Name = MakeSlotLabel("Tühi");
         _s2Border = MakeSlot(new VerticalStackLayout
@@ -87,7 +80,6 @@ public class CraftPage : ContentPage
         t2.Tapped += (_, _) => { ClearSlot2(); RefreshInventory(); UpdateBtn(); };
         _s2Border.GestureRecognizers.Add(t2);
 
-        // ── Slots row ─────────────────────────────────────────────────────────
         var plus = new Label
         {
             Text = "+",
@@ -104,7 +96,6 @@ public class CraftPage : ContentPage
         slotsRow.Add(plus, 1, 0);
         slotsRow.Add(_s2Border, 2, 0);
 
-        // ── Craft button ──────────────────────────────────────────────────────
         _craftBtn = new Button
         {
             Text = "Kombineeri!",
@@ -174,7 +165,6 @@ public class CraftPage : ContentPage
             }
         });
 
-        // ── Inventory ─────────────────────────────────────────────────────────
         _invLayout = new HorizontalStackLayout
         {
             Spacing = 10,
@@ -197,7 +187,6 @@ public class CraftPage : ContentPage
             }
         });
 
-        // ── Back button ───────────────────────────────────────────────────────
         var backBtn = new Button
         {
             Text = "←  Tagasi mängu",
@@ -236,22 +225,17 @@ public class CraftPage : ContentPage
         Content = _rootAbsolute;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  INVENTORY — показываем только предметы, которых НЕТ в слотах
-    // ─────────────────────────────────────────────────────────────────────────
     private void RefreshInventory()
     {
         _invLayout.Children.Clear();
 
-        // Фильтруем: только те предметы, которые не заняты в слотах
         var available = _game.Player.Inventory
             .Where(i => i != _slot1 && i != _slot2)
             .ToList();
 
         if (!available.Any())
         {
-            // Если все предметы в слотах или инвентарь пуст — пустое место
-            // (не показываем текст, чтобы UI не прыгал)
+        
             return;
         }
 
@@ -296,7 +280,6 @@ public class CraftPage : ContentPage
 
             AttachDragGesture(border, capturedItem);
 
-            // Tap — быстрое добавление в слот
             var tap = new TapGestureRecognizer();
             tap.Tapped += (_, _) =>
             {
@@ -312,9 +295,6 @@ public class CraftPage : ContentPage
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  DRAG
-    // ─────────────────────────────────────────────────────────────────────────
     private void AttachDragGesture(Border cardBorder, Item item)
     {
         var pan = new PanGestureRecognizer();
@@ -327,8 +307,8 @@ public class CraftPage : ContentPage
                     {
                         if (_isDragging) break;
                         _isDragging = true;
-                        _draggedItem = item;
 
+                        _draggedItem = item;
                         _ = cardBorder.FadeTo(0.3, 100);
                         _ghostStartPos = GetAbsolutePosition(cardBorder);
 
@@ -417,7 +397,6 @@ public class CraftPage : ContentPage
         cardBorder.GestureRecognizers.Add(pan);
     }
 
-    // ── Walk up parent tree to get absolute position ──────────────────────────
     private Point GetAbsolutePosition(View view)
     {
         double x = 0, y = 0;
@@ -434,7 +413,6 @@ public class CraftPage : ContentPage
         return new Point(x, y);
     }
 
-    // ── Is ghost center inside a slot? ────────────────────────────────────────
     private int HitTestSlots()
     {
         if (_ghostView == null) return 0;
@@ -480,12 +458,8 @@ public class CraftPage : ContentPage
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  SLOT FILL / CLEAR
-    // ─────────────────────────────────────────────────────────────────────────
     private void FillSlot1(Item i)
     {
-        // Если этот предмет уже был в слоте 2 — освобождаем слот 2
         if (_slot2 == i) ClearSlot2();
 
         _slot1 = i;
@@ -498,7 +472,6 @@ public class CraftPage : ContentPage
 
     private void FillSlot2(Item i)
     {
-        // Если этот предмет уже был в слоте 1 — освобождаем слот 1
         if (_slot1 == i) ClearSlot1();
 
         _slot2 = i;
@@ -531,9 +504,6 @@ public class CraftPage : ContentPage
 
     private void UpdateBtn() => _craftBtn.IsEnabled = _slot1 != null && _slot2 != null;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  CRAFT
-    // ─────────────────────────────────────────────────────────────────────────
     private async void OnCraftClicked(object? sender, EventArgs e)
     {
         if (_slot1 == null || _slot2 == null || _isNavigatingBack) return;
@@ -568,9 +538,6 @@ public class CraftPage : ContentPage
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  UI HELPERS
-    // ─────────────────────────────────────────────────────────────────────────
     private static Image MakeSlotImage() => new()
     {
         Aspect = Aspect.AspectFit,
