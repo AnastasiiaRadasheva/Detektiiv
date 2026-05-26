@@ -477,7 +477,7 @@ public class GamePage : ContentPage
 
     private async void OnSettingsClicked(object? sender, EventArgs e)
     {
-        string? a = await DisplayActionSheet("Seaded", "Tagasi", null, "Tume", "Seepia", "Mets");
+        string? a = await DisplayActionSheetAsync("Seaded", "Tagasi", null, "Tume", "Seepia", "Mets");
         var t = a switch { "Tume" => Theme.Dark, "Seepia" => Theme.Sepia, "Mets" => Theme.Forest, _ => (Theme?)null };
         if (t != null) { ApplyTheme(t); RenderRoom(); RefreshInventory(); }
     }

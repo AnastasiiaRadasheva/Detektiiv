@@ -109,7 +109,6 @@ public class CraftPage : ContentPage
         };
         _craftBtn.Clicked += OnCraftClicked;
 
-        // ── Fail + result ─────────────────────────────────────────────────────
         _failLabel = new Label
         {
             TextColor = Colors.OrangeRed,
@@ -249,7 +248,7 @@ public class CraftPage : ContentPage
                 Aspect = Aspect.AspectFit,
                 HeightRequest = 60,
                 WidthRequest = 60,
-                BackgroundColor = Colors.Transparent
+                BackgroundColor = Colors.Transparent 
             };
 
             var nameLabel = new Label
@@ -285,7 +284,7 @@ public class CraftPage : ContentPage
             {
                 if (_slot1 == null) FillSlot1(capturedItem);
                 else if (_slot2 == null) FillSlot2(capturedItem);
-                else FillSlot1(capturedItem); // заменить слот 1
+                else FillSlot1(capturedItem); 
                 RefreshInventory();
                 UpdateBtn();
             };
